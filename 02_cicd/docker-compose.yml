@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  train:
+    build: .
+    volumes:
+      - ./models:/app/models   # persist model artifacts to host
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["python", "src/train.py", "--n_estimators", "100"]
+
+  # Uncomment to add a serving container (e.g. FastAPI)
+  # serve:
+  #   build: .
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./models:/app/models
+  #   command: ["python", "src/serve.py"]
+  #   depends_on:
+  #     - train
