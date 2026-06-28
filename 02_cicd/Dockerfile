@@ -14,8 +14,9 @@ WORKDIR /app
 # Copy installed packages from builder (keeps the final image lean)
 COPY --from=builder /install /usr/local
 
-# Copy source code
+# Copy source code and tests
 COPY src/ ./src/
+COPY tests/ ./tests/
 
-# Train on startup — in production replace with a serving entrypoint
-ENTRYPOINT ["python", "src/train.py"]
+# CMD is overridable at runtime; ENTRYPOINT would not be
+CMD ["python", "src/train.py"]
