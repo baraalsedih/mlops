@@ -1,4 +1,5 @@
 [core]
+    remote = local_remote
     autostage = true
-[remote "onprem"]
-    url = /data/mlops-storage
+['remote "local_remote"']
+    url = C:/Users/BARAAL~1/AppData/Local/Temp/dvc-remote

@@ -1,0 +1,1091 @@
+<title>MLOps Training Session</title>
+<meta name="description" content="2.5-hour training covering W&B experiment tracking, CI/CD for ML, and production monitoring with drift detection.">
+
+<style>
+:root {
+  --bg:#0D1117; --surface:#161B22; --surface2:#1C2128; --border:#30363D;
+  --text:#E6EDF3; --dim:#B1BAC4; --muted:#7D8590;
+  --wb:#F0A500; --wb-d:rgba(240,165,0,.10);
+  --cicd:#4D9CFF; --cicd-d:rgba(77,156,255,.10);
+  --mon:#3FB950; --mon-d:rgba(63,185,80,.10);
+  --code:#010409;
+  --kw:#FF7B72; --fn:#79C0FF; --str:#A5D6A7; --cm:#6E7681; --num:#F2CC60;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono',SFMono-Regular,Menlo,monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --r:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+
+.runner{display:flex;height:100vh;transition:transform .38s cubic-bezier(.25,.46,.45,.94);will-change:transform}
+.slide{width:100vw;height:100vh;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4.5rem 5.5rem 3rem;position:relative;overflow:hidden}
+.inner{width:100%;max-width:900px;display:flex;flex-direction:column;gap:1.4rem}
+
+/* section top bar */
+.slide::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+[data-s=wb]::before{background:var(--wb)}
+[data-s=cicd]::before{background:var(--cicd)}
+[data-s=mon]::before{background:var(--mon)}
+[data-s=intro]::before,[data-s=end]::before{background:linear-gradient(90deg,var(--wb),var(--cicd),var(--mon))}
+
+/* type */
+.eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.title{font-family:var(--mono);font-size:3rem;font-weight:700;line-height:1.1;text-wrap:balance}
+.h1{font-family:var(--mono);font-size:1.9rem;font-weight:700;line-height:1.2;text-wrap:balance}
+.h2{font-family:var(--sans);font-size:1.25rem;font-weight:600;line-height:1.3}
+.body{font-size:1rem;line-height:1.7;color:var(--dim)}
+.body strong{color:var(--text);font-weight:600}
+
+/* colors */
+.wb{color:var(--wb)} .cicd{color:var(--cicd)} .mon{color:var(--mon)}
+
+/* timing pill */
+.timing{position:absolute;top:1.3rem;right:2rem;font-family:var(--mono);font-size:.68rem;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:.2rem .55rem;border-radius:999px}
+
+/* section slide */
+.sec-slide{background:var(--surface2)}
+.sec-num{font-family:var(--mono);font-size:9rem;font-weight:700;opacity:.07;position:absolute;right:2.5rem;bottom:.5rem;pointer-events:none;user-select:none;line-height:1}
+.sec-title{font-family:var(--mono);font-size:2.5rem;font-weight:700;line-height:1.2}
+
+/* card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.3rem}
+.card-t{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.05em;margin-bottom:.5rem}
+
+/* two col */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem}
+
+/* code */
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.3rem;font-family:var(--mono);font-size:.79rem;line-height:1.72;overflow-x:auto;tab-size:2}
+pre.code .kw{color:var(--kw)} pre.code .fn{color:var(--fn)} pre.code .st{color:var(--str)}
+pre.code .cm{color:var(--cm);font-style:italic} pre.code .nm{color:var(--num)}
+
+/* flow */
+.flow{display:flex;align-items:center;gap:0;flex-wrap:nowrap;overflow-x:auto}
+.fbox{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:.55rem 1rem;font-family:var(--mono);font-size:.76rem;text-align:center;white-space:nowrap;flex-shrink:0;line-height:1.4}
+.fbox.wb{border-color:var(--wb);color:var(--wb)} .fbox.cicd{border-color:var(--cicd);color:var(--cicd)}
+.fbox.mon{border-color:var(--mon);color:var(--mon)} .fbox.fail{border-color:var(--kw);color:var(--kw)}
+.fbox.pass{border-color:var(--str);color:var(--str)}
+.farr{color:var(--muted);padding:0 .5rem;flex-shrink:0}
+
+/* bullets */
+ul.b{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+ul.b li{display:flex;gap:.65rem;align-items:flex-start;font-size:.93rem;color:var(--dim);line-height:1.5}
+ul.b li::before{content:'▸';color:var(--muted);flex-shrink:0;margin-top:.05em}
+ul.b li strong{color:var(--text)}
+
+/* pill */
+.pill{display:inline-flex;font-family:var(--mono);font-size:.7rem;padding:.25rem .7rem;border-radius:999px;border:1px solid}
+.pill.wb{color:var(--wb);border-color:var(--wb);background:var(--wb-d)}
+.pill.cicd{color:var(--cicd);border-color:var(--cicd);background:var(--cicd-d)}
+.pill.mon{color:var(--mon);border-color:var(--mon);background:var(--mon-d)}
+.pill.n{color:var(--muted);border-color:var(--border);background:var(--surface)}
+.pills{display:flex;flex-wrap:wrap;gap:.4rem}
+
+/* compare */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.chead{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;padding:.35rem .7rem;border-radius:var(--r) var(--r) 0 0}
+.chead.bad{background:rgba(255,123,114,.10);color:var(--kw)} .chead.good{background:rgba(165,214,167,.12);color:var(--str)}
+.crow{font-size:.85rem;color:var(--dim);padding:.3rem .7rem;background:var(--surface);border-radius:var(--r);margin-top:2px}
+
+/* takeaway */
+.tk{background:var(--surface);border-left:3px solid;border-radius:0 var(--r) var(--r) 0;padding:.75rem 1rem;font-size:.93rem;color:var(--dim);line-height:1.5}
+.tk strong{color:var(--text)} .tk.wb{border-color:var(--wb)} .tk.cicd{border-color:var(--cicd)} .tk.mon{border-color:var(--mon)}
+
+/* tag inline */
+.tag{font-family:var(--mono);font-size:.65rem;padding:.12rem .45rem;border-radius:3px;font-weight:700}
+.tag.wb{background:var(--wb-d);color:var(--wb)} .tag.cicd{background:var(--cicd-d);color:var(--cicd)}
+.tag.mon{background:var(--mon-d);color:var(--mon)} .tag.n{background:var(--surface);color:var(--muted)}
+
+/* nav */
+#nav{position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:1.2rem;background:rgba(22,27,34,.92);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:999px;padding:.55rem 1.4rem;z-index:100}
+#nav button{background:none;border:none;cursor:pointer;color:var(--muted);font-family:var(--mono);font-size:.85rem;padding:.15rem .35rem;border-radius:4px;transition:color .15s}
+#nav button:hover{color:var(--text)}
+.dots{display:flex;gap:.35rem;align-items:center}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--border);cursor:pointer;transition:background .2s,transform .2s}
+.dot.on{transform:scale(1.6)}
+.dot[data-s=wb].on{background:var(--wb)} .dot[data-s=cicd].on{background:var(--cicd)}
+.dot[data-s=mon].on{background:var(--mon)} .dot[data-s=intro].on,.dot[data-s=end].on{background:var(--dim)}
+#ctr{font-family:var(--mono);font-size:.68rem;color:var(--muted);min-width:3.5rem;text-align:center;font-variant-numeric:tabular-nums}
+
+/* section pills top */
+#snav{position:fixed;top:1.3rem;left:50%;transform:translateX(-50%);display:flex;gap:.4rem;z-index:100}
+.sp{font-family:var(--mono);font-size:.65rem;letter-spacing:.06em;padding:.22rem .7rem;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:rgba(22,27,34,.8);backdrop-filter:blur(8px);transition:all .2s}
+.sp.awb{color:var(--wb);border-color:var(--wb);background:var(--wb-d)}
+.sp.acicd{color:var(--cicd);border-color:var(--cicd);background:var(--cicd-d)}
+.sp.amon{color:var(--mon);border-color:var(--mon);background:var(--mon-d)}
+</style>
+
+<div id="snav">
+  <span class="sp" id="sn1">W&amp;B</span>
+  <span class="sp" id="sn2">CI/CD</span>
+  <span class="sp" id="sn3">Monitoring</span>
+</div>
+
+<div class="runner" id="runner">
+
+<!-- 0: Title -->
+<div class="slide" data-s="intro">
+<div class="inner" style="gap:2rem">
+  <div><div class="eyebrow" style="margin-bottom:.8rem">MLOps Training Session · 2.5 hours</div>
+  <div class="title">Experiment Tracking,<br>CI/CD &amp; Production<br>Monitoring</div></div>
+  <div class="pills"><span class="pill wb">W&amp;B</span><span class="pill cicd">Docker + GitHub Actions</span><span class="pill mon">Drift Detection</span></div>
+  <p class="body" style="max-width:500px">All code is in the repo. Follow along or just watch — the scripts are yours after the session.</p>
+</div><div class="timing">00:00</div>
+</div>
+
+<!-- 1: Agenda -->
+<div class="slide" data-s="intro">
+<div class="inner">
+  <div class="eyebrow">Today's agenda</div>
+  <div class="h1">What we'll cover</div>
+  <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.3rem">
+    <div class="card" style="display:grid;grid-template-columns:5.5rem 1fr;gap:1rem;align-items:center">
+      <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">00:00–00:45</span>
+      <div><span class="tag wb">W&amp;B</span> <strong style="margin-left:.5rem">Experiment tracking + data &amp; model versioning</strong></div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:5.5rem 1fr;gap:1rem;align-items:center">
+      <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">00:45–01:30</span>
+      <div><span class="tag cicd">CI/CD</span> <strong style="margin-left:.5rem">Docker + GitHub Actions + automated testing</strong></div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:5.5rem 1fr;gap:1rem;align-items:center">
+      <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">01:30–02:15</span>
+      <div><span class="tag mon">Monitoring</span> <strong style="margin-left:.5rem">Pre-prod / prod MLOps + drift detection</strong></div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:5.5rem 1fr;gap:1rem;align-items:center">
+      <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted)">02:15–02:30</span>
+      <div><span class="tag n">Q&amp;A</span> <span style="margin-left:.5rem;color:var(--muted)">Open questions</span></div>
+    </div>
+  </div>
+</div><div class="timing">00:00</div>
+</div>
+
+<!-- 2: W&B Section -->
+<div class="slide sec-slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">Part 1 · 45 minutes</div>
+  <div class="sec-title">Weights &amp; Biases</div>
+  <div class="sec-title" style="color:var(--muted);font-weight:400">Experiment Tracking<br>&amp; Versioning</div>
+  <div class="pills" style="margin-top:.75rem">
+    <span class="pill wb">Experiment tracking</span><span class="pill wb">Data versioning</span>
+    <span class="pill wb">Model registry</span><span class="pill n">DVC for large data</span>
+  </div>
+</div><span class="sec-num wb">01</span><div class="timing">00:00</div>
+</div>
+
+<!-- 3: The Problem -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">The problem</div>
+  <div class="h1">Which model is in production?</div>
+  <div class="cmp" style="margin-top:.5rem">
+    <div>
+      <div class="chead bad">Without tracking</div>
+      <div class="crow">model_final.pkl</div>
+      <div class="crow">model_final_v2.pkl</div>
+      <div class="crow">model_ACTUALLY_final.pkl</div>
+      <div class="crow">model_new_DO_NOT_DELETE.pkl</div>
+      <div class="crow" style="color:var(--kw)">❓ Trained on what data?</div>
+      <div class="crow" style="color:var(--kw)">❓ Which hyperparameters?</div>
+      <div class="crow" style="color:var(--kw)">❓ Better than last week's?</div>
+    </div>
+    <div>
+      <div class="chead good">With W&amp;B</div>
+      <div class="crow">Every run logged with its config</div>
+      <div class="crow">Metrics compared side-by-side</div>
+      <div class="crow">Model artifacts versioned</div>
+      <div class="crow">Shareable dashboard link</div>
+      <div class="crow" style="color:var(--str)">✓ Full reproducibility</div>
+      <div class="crow" style="color:var(--str)">✓ Team visibility</div>
+      <div class="crow" style="color:var(--str)">✓ Rollback in one click</div>
+    </div>
+  </div>
+</div><div class="timing">00:02</div>
+</div>
+
+<!-- 4: Core Concepts -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">Core concepts</div>
+  <div class="h1">How W&amp;B is structured</div>
+  <div class="flow" style="margin-top:1rem;justify-content:center">
+    <div class="fbox">Entity<br><span style="color:var(--muted);font-size:.68rem">org / user</span></div><div class="farr">→</div>
+    <div class="fbox wb">Project<br><span style="font-size:.68rem">wine-classifier</span></div><div class="farr">→</div>
+    <div class="fbox wb">Run<br><span style="font-size:.68rem">exp_0627</span></div><div class="farr">→</div>
+    <div class="fbox wb">Artifact<br><span style="font-size:.68rem">model.pkl v3</span></div><div class="farr">→</div>
+    <div class="fbox wb">Registry<br><span style="font-size:.68rem">:production</span></div>
+  </div>
+  <div class="three" style="margin-top:1.25rem">
+    <div class="card">
+      <div class="card-t wb">Run</div>
+      <p style="font-size:.86rem;color:var(--dim);line-height:1.5">One training execution. Captures hyperparams, metrics, system stats, and media automatically.</p>
+    </div>
+    <div class="card">
+      <div class="card-t wb">Artifact</div>
+      <p style="font-size:.86rem;color:var(--dim);line-height:1.5">Versioned file collection. Type can be <code style="font-family:var(--mono)">dataset</code>, <code style="font-family:var(--mono)">model</code>, or custom. Immutable once logged.</p>
+    </div>
+    <div class="card">
+      <div class="card-t wb">Registry</div>
+      <p style="font-size:.86rem;color:var(--dim);line-height:1.5">Alias-based promotion. <code style="font-family:var(--mono)">:production</code> always points to the current best model, not a fixed version number.</p>
+    </div>
+  </div>
+</div><div class="timing">00:05</div>
+</div>
+
+<!-- 5: Before vs After -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">Live demo — 01_wandb/</div>
+  <div class="h1">Adding W&amp;B in 5 lines</div>
+  <div class="two" style="margin-top:.75rem">
+    <div>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--kw);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.45rem">Before — train_baseline.py</div>
+      <pre class="code">model.fit(X_train, y_train)
+preds = model.predict(X_test)
+acc = accuracy_score(y_test, preds)
+<span class="cm"># Printed and gone. No record.</span>
+print(f<span class="st">"Accuracy: {acc:.4f}"</span>)
+joblib.dump(model, <span class="st">"model.pkl"</span>)</pre>
+    </div>
+    <div>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--str);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.45rem">After — train_with_wandb.py</div>
+      <pre class="code"><span class="fn">wandb</span>.<span class="fn">init</span>(project=<span class="st">"wine-classifier"</span>,
+         config=<span class="fn">vars</span>(args))
+
+model.fit(X_train, y_train)
+preds = model.predict(X_test)
+acc = accuracy_score(y_test, preds)
+
+<span class="fn">wandb</span>.log({<span class="st">"eval/accuracy"</span>: acc,
+            <span class="st">"eval/f1"</span>: f1})
+
+artifact = <span class="fn">wandb</span>.Artifact(
+    <span class="st">"wine-classifier"</span>, type=<span class="st">"model"</span>)
+artifact.add_file(<span class="st">"model.pkl"</span>)
+run.log_artifact(artifact)
+<span class="fn">wandb</span>.<span class="fn">finish</span>()</pre>
+    </div>
+  </div>
+</div><div class="timing">00:08</div>
+</div>
+
+<!-- 6: Dashboard -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">W&amp;B dashboard</div>
+  <div class="h1">What gets logged automatically</div>
+  <div class="three" style="margin-top:1rem">
+    <div class="card">
+      <div class="card-t wb">Hyperparameters</div>
+      <pre style="font-family:var(--mono);font-size:.78rem;color:var(--dim);line-height:1.65">n_estimators: 100
+max_depth: 5
+test_size: 0.2
+random_state: 42</pre>
+    </div>
+    <div class="card">
+      <div class="card-t wb">Metrics</div>
+      <pre style="font-family:var(--mono);font-size:.78rem;color:var(--dim);line-height:1.65">eval/accuracy:   0.9722
+eval/f1_weighted:0.9723
+data/train_size: 142
+data/n_features: 13</pre>
+    </div>
+    <div class="card">
+      <div class="card-t wb">Media &amp; metadata</div>
+      <ul style="list-style:none;font-size:.86rem;color:var(--dim);line-height:1.8;margin-top:.2rem">
+        <li>Confusion matrix (image)</li>
+        <li>Feature importances (image)</li>
+        <li>System metrics (CPU/RAM)</li>
+        <li>Git commit hash</li>
+      </ul>
+    </div>
+  </div>
+  <div class="tk wb" style="margin-top:.75rem">Run the same script with <code style="font-family:var(--mono);color:var(--wb)">--n_estimators 200 --max_depth 10</code> and compare the two runs side-by-side in the W&amp;B UI. Reproducibility with one command.</div>
+</div><div class="timing">00:15</div>
+</div>
+
+<!-- 7: Data Versioning Strategy -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">Data versioning</div>
+  <div class="h1">Choosing the right tool</div>
+  <div class="two" style="margin-top:.75rem;gap:1.25rem">
+    <div class="card" style="border-color:var(--wb);display:flex;flex-direction:column;gap:.7rem">
+      <div class="card-t wb">W&amp;B Artifacts — metadata only</div>
+      <ul class="b">
+        <li>Small datasets (&lt; a few GB)</li>
+        <li>Non-sensitive data</li>
+        <li>Log <strong>schema, hash, split sizes</strong> — not raw rows</li>
+        <li>Lineage visible in W&amp;B UI automatically</li>
+      </ul>
+      <pre class="code" style="font-size:.74rem">artifact = <span class="fn">wandb</span>.Artifact(
+  <span class="st">"wine-dataset-meta"</span>, type=<span class="st">"dataset"</span>,
+  metadata={<span class="st">"hash"</span>: hash_train,
+            <span class="st">"n_train"</span>: <span class="nm">142</span>})
+<span class="cm"># Only add a small JSON — not the CSV</span>
+artifact.add_file(<span class="st">"dataset_metadata.json"</span>)</pre>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:.7rem">
+      <div class="card-t" style="color:var(--text)">DVC — large / sensitive data</div>
+      <ul class="b">
+        <li>Large datasets (GBs / TBs)</li>
+        <li><strong>Data stays on your servers</strong></li>
+        <li>Git stores only a pointer file (MD5 + size)</li>
+        <li>DVC fetches bytes from your configured remote</li>
+      </ul>
+      <div class="flow" style="margin-top:.25rem;justify-content:center;gap:.3rem">
+        <div class="fbox" style="font-size:.7rem">git<br>code + .dvc</div>
+        <div class="farr">+</div>
+        <div class="fbox" style="font-size:.7rem">DVC<br>data bytes</div>
+        <div class="farr">+</div>
+        <div class="fbox wb" style="font-size:.7rem">W&amp;B<br>results</div>
+      </div>
+    </div>
+  </div>
+</div><div class="timing">00:22</div>
+</div>
+
+<!-- 8: DVC Mental Model -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">DVC deep dive — 01_wandb/dvc_demo/</div>
+  <div class="h1">How DVC works</div>
+  <div class="three" style="margin-top:1rem">
+    <div class="card" style="text-align:center">
+      <div style="font-family:var(--mono);font-size:1.5rem;margin-bottom:.4rem">git</div>
+      <div class="card-t" style="color:var(--muted);text-align:center">tracks</div>
+      <ul style="list-style:none;font-size:.85rem;color:var(--dim);line-height:1.85;text-align:left;margin-top:.5rem">
+        <li>▸ src/ code</li>
+        <li>▸ params.yaml</li>
+        <li>▸ dvc.yaml pipeline</li>
+        <li>▸ data.dvc <em style="color:var(--muted)">(pointer only)</em></li>
+      </ul>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-family:var(--mono);font-size:1.5rem;margin-bottom:.4rem">DVC</div>
+      <div class="card-t" style="color:var(--muted);text-align:center">tracks</div>
+      <ul style="list-style:none;font-size:.85rem;color:var(--dim);line-height:1.85;text-align:left;margin-top:.5rem">
+        <li>▸ data/wine_raw.csv</li>
+        <li>▸ models/model.pkl</li>
+        <li>▸ Pipeline cache</li>
+        <li>▸ Remote: <em>your server</em></li>
+      </ul>
+    </div>
+    <div class="card" style="text-align:center;border-color:var(--wb)">
+      <div style="font-family:var(--mono);font-size:1.5rem;margin-bottom:.4rem;color:var(--wb)">W&amp;B</div>
+      <div class="card-t wb" style="text-align:center">tracks</div>
+      <ul style="list-style:none;font-size:.85rem;color:var(--dim);line-height:1.85;text-align:left;margin-top:.5rem">
+        <li>▸ Metrics &amp; plots</li>
+        <li>▸ Model artifacts</li>
+        <li>▸ Experiment history</li>
+        <li>▸ Production alias</li>
+      </ul>
+    </div>
+  </div>
+  <div class="tk wb" style="margin-top:.9rem"><strong>Key principle:</strong> These tools are complementary. git for code, DVC for data files on your servers, W&amp;B for experiment results and model promotion.</div>
+</div><div class="timing">00:28</div>
+</div>
+
+<!-- 9: DVC Pipeline -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">DVC pipelines — dvc.yaml</div>
+  <div class="h1">Reproducible stages</div>
+  <div class="two" style="margin-top:.75rem;align-items:center">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.4rem">
+      <div class="fbox" style="width:100%;text-align:center">data/wine_raw.csv<br><span style="color:var(--muted);font-size:.68rem">DVC-tracked input</span></div>
+      <div style="color:var(--muted);font-size:1.1rem">↓</div>
+      <div class="fbox wb" style="width:100%;text-align:center">prepare — src/prepare.py</div>
+      <div style="color:var(--muted);font-size:1.1rem">↓</div>
+      <div class="fbox wb" style="width:100%;text-align:center">train &nbsp;&nbsp;— src/train.py</div>
+      <div style="color:var(--muted);font-size:1.1rem">↓</div>
+      <div class="fbox wb" style="width:100%;text-align:center">evaluate — src/evaluate.py</div>
+      <div style="color:var(--muted);font-size:1.1rem">↓</div>
+      <div class="fbox pass" style="width:100%;text-align:center">metrics/scores.json</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.9rem">
+      <div class="card">
+        <div class="card-t wb">Run pipeline</div>
+        <pre class="code" style="font-size:.76rem">dvc repro  <span class="cm"># only re-runs changed stages</span>
+dvc metrics show</pre>
+      </div>
+      <div class="card">
+        <div class="card-t wb">Compare experiments</div>
+        <pre class="code" style="font-size:.76rem">dvc params diff HEAD~1
+dvc metrics diff HEAD~1</pre>
+      </div>
+      <div class="card">
+        <div class="card-t wb">Reproduce any past run</div>
+        <pre class="code" style="font-size:.76rem">git checkout &lt;commit&gt;
+dvc pull    <span class="cm"># fetches that commit's data</span>
+dvc repro</pre>
+      </div>
+    </div>
+  </div>
+</div><div class="timing">00:33</div>
+</div>
+
+<!-- 10: Model Registry -->
+<div class="slide" data-s="wb">
+<div class="inner">
+  <div class="eyebrow wb">Model registry — model_registry.py</div>
+  <div class="h1">Alias-based promotion</div>
+  <div class="two" style="margin-top:.9rem">
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      <div class="fbox" style="width:100%">wine-classifier:v1 <span style="float:right;color:var(--muted)">development</span></div>
+      <div class="fbox" style="width:100%">wine-classifier:v2 <span style="float:right;color:var(--muted)">staging</span></div>
+      <div class="fbox wb" style="width:100%;font-weight:700">wine-classifier:v3 <span style="float:right">← :production</span></div>
+      <div class="fbox" style="width:100%;color:var(--muted)">wine-classifier:v4 <span style="float:right">development</span></div>
+      <div class="tk wb" style="margin-top:.4rem">Deployment code always pulls <code style="font-family:var(--mono)">:production</code>. Rollback = reassign the alias in the UI. No re-deploy needed.</div>
+    </div>
+    <pre class="code" style="font-size:.76rem"><span class="cm"># Promote to production</span>
+run.link_artifact(
+  artifact,
+  target_path=<span class="st">"registry/wine-classifier"</span>,
+  aliases=[<span class="st">"production"</span>])
+
+<span class="cm"># Deployment script — always</span>
+<span class="cm"># resolves to current production</span>
+prod = run.use_artifact(
+  <span class="st">"wine-classifier:production"</span>)
+prod_dir = prod.download()
+model = joblib.load(
+  f<span class="st">"{prod_dir}/model.pkl"</span>)
+
+<span class="cm"># To roll back: reassign alias</span>
+<span class="cm"># in W&B UI — no code change</span></pre>
+  </div>
+</div><div class="timing">00:38</div>
+</div>
+
+<!-- 11: W&B Takeaways -->
+<div class="slide" data-s="wb">
+<div class="inner" style="max-width:700px">
+  <div class="eyebrow wb">Key takeaways</div>
+  <div class="h1">W&amp;B &amp; versioning</div>
+  <div style="display:flex;flex-direction:column;gap:.65rem;margin-top:.9rem">
+    <div class="tk wb"><strong>Every experiment is a run.</strong> Add <code style="font-family:var(--mono)">wandb.init + wandb.log</code> and your training script becomes reproducible and comparable by default.</div>
+    <div class="tk wb"><strong>Don't upload raw data.</strong> Log metadata — hash, schema, split sizes — for audit trails. Use DVC for the actual bytes when they're large or client-sensitive.</div>
+    <div class="tk wb"><strong>Aliases over version numbers.</strong> Deployment code references <code style="font-family:var(--mono)">:production</code>, not <code style="font-family:var(--mono)">:v7</code>. Promotion and rollback become one-click operations.</div>
+    <div class="tk wb"><strong>git + DVC + W&amp;B = complete picture.</strong> Code reproducibility, data reproducibility, and experiment visibility are separate concerns solved by separate tools.</div>
+  </div>
+</div><div class="timing">00:43</div>
+</div>
+
+<!-- 12: CI/CD Section -->
+<div class="slide sec-slide" data-s="cicd">
+<div class="inner">
+  <div class="eyebrow cicd">Part 2 · 45 minutes</div>
+  <div class="sec-title">CI/CD for ML</div>
+  <div class="sec-title" style="color:var(--muted);font-weight:400">Docker · GitHub Actions<br>Pipelines · Testing</div>
+  <div class="pills" style="margin-top:.75rem">
+    <span class="pill cicd">Docker multi-stage</span><span class="pill cicd">GitHub Actions</span>
+    <span class="pill cicd">Quality gates</span><span class="pill cicd">Automated testing</span>
+  </div>
+</div><span class="sec-num cicd">02</span><div class="timing">00:45</div>
+</div>
+
+<!-- 13: ML vs Traditional CI/CD -->
+<div class="slide" data-s="cicd">
+<div class="inner">
+  <div class="eyebrow cicd">Context</div>
+  <div class="h1">ML makes CI/CD harder</div>
+  <div class="two" style="margin-top:.85rem">
+    <div class="card">
+      <div class="card-t" style="color:var(--muted)">Traditional software CI/CD</div>
+      <ul class="b" style="margin-top:.5rem">
+        <li>Pass/fail is deterministic</li>
+        <li>Output = lines of code (text)</li>
+        <li>Test coverage is straightforward</li>
+        <li>Rollback = revert a commit</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:var(--cicd)">
+      <div class="card-t cicd">ML systems — extra challenges</div>
+      <ul class="b" style="margin-top:.5rem">
+        <li>Pass/fail depends on <strong>data + code + randomness</strong></li>
+        <li>Output = a binary model file</li>
+        <li>Training can take hours or days</li>
+        <li>Rollback = previous model version</li>
+        <li><strong>New failure mode:</strong> silent model degradation</li>
+      </ul>
+    </div>
+  </div>
+  <div class="tk cicd" style="margin-top:.9rem">We need the same CI/CD habits, plus a <strong>model quality gate</strong> — a test that blocks deployment if accuracy or latency misses the threshold.</div>
+</div><div class="timing">00:47</div>
+</div>
+
+<!-- 14: Docker for ML -->
+<div class="slide" data-s="cicd">
+<div class="inner">
+  <div class="eyebrow cicd">Docker</div>
+  <div class="h1">Why containerize ML code?</div>
+  <div class="three" style="margin-top:1rem;margin-bottom:.9rem">
+    <div class="card">
+      <div class="card-t cicd">Reproducibility</div>
+      <p style="font-size:.86rem;color:var(--dim);margin-top:.4rem;line-height:1.5">"Works on my machine" disappears. The container carries its own Python, CUDA, and library versions everywhere.</p>
+    </div>
+    <div class="card">
+      <div class="card-t cicd">Portability</div>
+      <p style="font-size:.86rem;color:var(--dim);margin-top:.4rem;line-height:1.5">Same image runs on a laptop, CI server, cloud VM, or Kubernetes pod without modification.</p>
+    </div>
+    <div class="card">
+      <div class="card-t cicd">Isolation</div>
+      <p style="font-size:.86rem;color:var(--dim);margin-top:.4rem;line-height:1.5">Different models with conflicting dependencies co-exist safely. Training and serving can use different base images.</p>
+    </div>
+  </div>
+  <div class="body"><strong>Multi-stage builds</strong> — keep images lean: a heavy <em>builder</em> stage installs dependencies, then only the installed packages are copied into a minimal <em>runtime</em> image. Final image is ~180 MB instead of ~800 MB.</div>
+</div><div class="timing">00:52</div>
+</div>
+
+<!-- 15: Dockerfile -->
+<div class="slide" data-s="cicd">
+<div class="inner">
+  <div class="eyebrow cicd">Live demo — 02_cicd/Dockerfile + docker-compose.yml</div>
+  <div class="h1">Dockerfile + Docker Compose</div>
+  <div class="two" style="margin-top:.75rem;align-items:start">
+    <pre class="code"><span class="cm"># ── Stage 1: builder ─────────────</span>
+<span class="kw">FROM</span> python:3.11-slim <span class="kw">AS</span> builder
+
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir \
+    --prefix=/install \
+    -r requirements.txt
+
+<span class="cm"># ── Stage 2: runtime ─────────────</span>
+<span class="kw">FROM</span> python:3.11-slim <span class="kw">AS</span> runtime
+
+<span class="kw">WORKDIR</span> /app
+<span class="cm"># Copy only installed packages</span>
+<span class="kw">COPY</span> --from=builder /install /usr/local
+<span class="kw">COPY</span> src/ ./src/
+
+<span class="kw">ENTRYPOINT</span> [<span class="st">"python"</span>, <span class="st">"src/train.py"</span>]</pre>
+    <div style="display:flex;flex-direction:column;gap:.75rem">
+      <div class="card">
+        <div class="card-t cicd">docker-compose.yml</div>
+        <pre class="code" style="font-size:.74rem"><span class="kw">services:</span>
+  <span class="fn">train:</span>
+    <span class="kw">build:</span> <span class="st">.</span>           <span class="cm"># uses our Dockerfile</span>
+    <span class="kw">volumes:</span>
+      <span class="st">- ./models:/app/models</span>
+    <span class="kw">environment:</span>
+      <span class="st">- PYTHONUNBUFFERED=1</span>
+    <span class="kw">command:</span> [<span class="st">"python"</span>, <span class="st">"src/train.py"</span>]</pre>
+      </div>
+      <div class="card">
+        <div class="card-t cicd">Build &amp; run with Compose</div>
+        <pre class="code" style="font-size:.75rem"><span class="cm"># Build image + start in one command</span>
+docker compose up --build
+
+<span class="cm"># Or separately:</span>
+docker compose build
+docker compose up
+
+<span class="cm"># Stop and remove containers</span>
+docker compose down</pre>
+      </div>
+      <div class="card">
+        <div class="card-t cicd">Why Compose over raw docker run?</div>
+        <ul class="b" style="font-size:.84rem">
+          <li>Volumes, env vars &amp; services declared once in a file</li>
+          <li>Easy to add a serving container later (<code style="font-family:var(--mono)">depends_on: train</code>)</li>
+          <li>Same command works for every team member</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div><div class="timing">00:57</div>
+</div>
+
+<!-- 16: Pipeline DAG -->
+<div class="slide" data-s="cicd">
+<div class="inner">
+  <div class="eyebrow cicd">GitHub Actions — .github/workflows/ml-pipeline.yml</div>
+  <div class="h1">The full pipeline</div>
+  <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:1rem">
+    <div style="display:flex;align-items:center;gap:.6rem">
+      <div class="fbox cicd" style="min-width:8rem;text-align:center">push to main</div>
+      <div class="farr">→</div>
+      <div class="fbox cicd" style="min-width:9rem;text-align:center">Job 1 — test<br><span style="font-size:.68rem">data schema + API tests</span></div>
+      <div class="farr" style="color:var(--kw)">✗ →</div>
+      <div class="fbox fail" style="min-width:5.5rem;text-align:center">❌ blocked</div>
+    </div>
+    <div style="padding-left:10rem;color:var(--str);font-family:var(--mono);font-size:.75rem">↓ pass</div>
+    <div style="display:flex;align-items:center;gap:.6rem;padding-left:9rem">
+      <div class="fbox cicd" style="min-width:9rem;text-align:center">Job 2 — train<br><span style="font-size:.68rem">+ quality gate</span></div>
+      <div class="farr" style="color:var(--kw)">✗ →</div>
+      <div class="fbox fail" style="min-width:5.5rem;text-align:center">❌ blocked</div>
+    </div>
+    <div style="padding-left:19.5rem;color:var(--str);font-family:var(--mono);font-size:.75rem">↓ pass</div>
+    <div style="display:flex;align-items:center;gap:.6rem;padding-left:9rem">
+      <div class="fbox cicd" style="min-width:9rem;text-align:center">Job 3 — build<br><span style="font-size:.68rem">docker + push to GHCR</span></div>
+      <div class="farr">→</div>
+      <div class="fbox cicd" style="min-width:9rem;text-align:center">Job 4 — deploy<br><span style="font-size:.68rem">to staging</span></div>
+    </div>
+  </div>
+  <div class="tk cicd" style="margin-top:1rem">The <strong>quality gate in Job 2</strong> is what distinguishes an ML pipeline from a standard software pipeline. It blocks deployment if accuracy &lt; 0.85 or latency &gt; 100ms.</div>
+</div><div class="timing">01:03</div>
+</div>
+
+<!-- 17: Three Test Layers -->
+<div class="slide" data-s="cicd">
+<div class="inner">
+  <div class="eyebrow cicd">Automated testing — 02_cicd/tests/</div>
+  <div class="h1">Three test layers</div>
+  <div class="three" style="margin-top:1rem">
+    <div class="card" style="display:flex;flex-direction:column;gap:.7rem">
+      <div><div class="eyebrow cicd">Layer 1</div><div class="h2">Data schema</div></div>
+      <ul class="b" style="font-size:.88rem">
+        <li>Correct number of features (13)</li>
+        <li>No NaN or infinite values</li>
+        <li>Expected target classes {0,1,2}</li>
+        <li>Feature names match spec</li>
+        <li>All values non-negative</li>
+      </ul>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted)">test_data_schema.py</div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:.7rem;border-color:var(--cicd)">
+      <div><div class="eyebrow cicd">Layer 2 — the gate</div><div class="h2">Model quality</div></div>
+      <ul class="b" style="font-size:.88rem">
+        <li>Accuracy ≥ 0.85</li>
+        <li>F1 (weighted) ≥ 0.85</li>
+        <li>Inference latency &lt; 100ms</li>
+        <li>metrics.json exists &amp; is valid</li>
+        <li>Only valid class indices output</li>
+      </ul>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted)">test_model_quality.py</div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:.7rem">
+      <div><div class="eyebrow cicd">Layer 3</div><div class="h2">API smoke test</div></div>
+      <ul class="b" style="font-size:.88rem">
+        <li>predict() returns a class name</li>
+        <li>predict_proba() sums to 1.0</li>
+        <li>All probabilities non-negative</li>
+        <li>Wrong feature count raises</li>
+        <li>Model loads from path cleanly</li>
+      </ul>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted)">test_predict_api.py</div>
+    </div>
+  </div>
+</div><div class="timing">01:10</div>
+</div>
+
+<!-- 18: Quality Gate Code -->
+<div class="slide" data-s="cicd">
+<div class="inner">
+  <div class="eyebrow cicd">Live demo — test_model_quality.py</div>
+  <div class="h1">The quality gate in code</div>
+  <div class="two" style="margin-top:.75rem">
+    <pre class="code" style="font-size:.77rem">ACCURACY_THRESHOLD = <span class="nm">0.85</span>
+LATENCY_MS = <span class="nm">100</span>
+
+<span class="kw">def</span> <span class="fn">test_model_accuracy</span>(trained_model, test_set):
+    X_test, y_test = test_set
+    preds = trained_model.predict(X_test)
+    acc = accuracy_score(y_test, preds)
+    <span class="kw">assert</span> acc &gt;= ACCURACY_THRESHOLD, (
+        f<span class="st">"Accuracy {acc:.4f} below threshold.</span>
+<span class="st">         Deployment blocked."</span>
+    )
+
+<span class="kw">def</span> <span class="fn">test_inference_latency</span>(trained_model, test_set):
+    sample = test_set[<span class="nm">0</span>][[<span class="nm">0</span>]]
+    start = time.perf_counter()
+    trained_model.predict(sample)
+    ms = (time.perf_counter() - start) * <span class="nm">1000</span>
+    <span class="kw">assert</span> ms &lt; LATENCY_MS, (
+        f<span class="st">"Latency {ms:.1f}ms — too slow."</span>
+    )</pre>
+    <div style="display:flex;flex-direction:column;gap:.85rem">
+      <div class="card">
+        <div class="card-t cicd">In ml-pipeline.yml</div>
+        <pre class="code" style="font-size:.75rem"><span class="kw">- name:</span> Run model quality gate
+  <span class="kw">working-directory:</span> 02_cicd
+  <span class="kw">run:</span> pytest tests/test_model_quality.py -v
+  <span class="cm"># Pipeline STOPS if tests fail</span></pre>
+      </div>
+      <div class="tk cicd"><strong>Fail fast.</strong> A model that misses the threshold is caught in CI before a Docker image is built or a deploy is triggered. Saves compute and prevents silent regressions reaching staging.</div>
+    </div>
+  </div>
+</div><div class="timing">01:17</div>
+</div>
+
+<!-- 19: CI/CD Takeaways -->
+<div class="slide" data-s="cicd">
+<div class="inner" style="max-width:700px">
+  <div class="eyebrow cicd">Key takeaways</div>
+  <div class="h1">CI/CD for ML</div>
+  <div style="display:flex;flex-direction:column;gap:.65rem;margin-top:.9rem">
+    <div class="tk cicd"><strong>Container = reproducibility.</strong> Multi-stage Dockerfiles keep images lean while ensuring the training environment is identical across dev, CI, and prod.</div>
+    <div class="tk cicd"><strong>Four-job pipeline.</strong> test → train+validate → build → deploy. Each job only runs if the previous passes. The quality gate is the key addition over standard software CI.</div>
+    <div class="tk cicd"><strong>Three test layers.</strong> Data schema, model quality, and API smoke tests cover different failure modes. Layer 2 is the gate that actually blocks bad models from deploying.</div>
+    <div class="tk cicd"><strong>Makefile as local shortcut.</strong> <code style="font-family:var(--mono)">make train</code>, <code style="font-family:var(--mono)">make test</code>, <code style="font-family:var(--mono)">make docker-build</code> — same commands developers run locally and CI runs remotely.</div>
+  </div>
+</div><div class="timing">01:27</div>
+</div>
+
+<!-- 20: Monitoring Section -->
+<div class="slide sec-slide" data-s="mon">
+<div class="inner">
+  <div class="eyebrow mon">Part 3 · 45 minutes</div>
+  <div class="sec-title">Production</div>
+  <div class="sec-title" style="color:var(--muted);font-weight:400">Monitoring · MLOps<br>Pre-prod &amp; Prod · Drift Detection</div>
+  <div class="pills" style="margin-top:.75rem">
+    <span class="pill mon">Pre-prod vs prod</span><span class="pill mon">Data drift</span>
+    <span class="pill mon">Concept drift</span><span class="pill mon">KS / PSI / χ²</span><span class="pill mon">Evidently AI</span>
+  </div>
+</div><span class="sec-num mon">03</span><div class="timing">01:30</div>
+</div>
+
+<!-- 21: Environment Architecture -->
+<div class="slide" data-s="mon">
+<div class="inner">
+  <div class="eyebrow mon">Architecture</div>
+  <div class="h1">Pre-prod vs Production</div>
+  <div class="flow" style="justify-content:center;gap:.4rem;margin-top:1.25rem">
+    <div class="fbox" style="text-align:center;padding:.9rem 1.1rem">Development<br><span style="font-size:.68rem;color:var(--muted)">local training<br>unit tests</span></div>
+    <div class="farr" style="font-size:1.3rem">→</div>
+    <div class="fbox cicd" style="text-align:center;padding:.9rem 1.1rem">Staging<br><span style="font-size:.68rem">shadow traffic<br>integration tests</span></div>
+    <div class="farr" style="font-size:1.3rem">→</div>
+    <div class="fbox" style="text-align:center;padding:.9rem 1.1rem;border-color:var(--muted);color:var(--muted)">Pre-prod<br><span style="font-size:.68rem">canary / A-B test<br>real data, low stakes</span></div>
+    <div class="farr" style="font-size:1.3rem">→</div>
+    <div class="fbox mon" style="text-align:center;padding:.9rem 1.1rem;font-weight:700">Production<br><span style="font-size:.68rem">live traffic<br>business impact</span></div>
+  </div>
+  <div class="three" style="margin-top:1.3rem">
+    <div class="card">
+      <div class="card-t cicd">Pre-prod checks</div>
+      <ul class="b" style="font-size:.85rem">
+        <li>Quality gate passed in CI</li>
+        <li>Shadow mode comparison</li>
+        <li>Latency benchmarks</li>
+        <li>Regression vs current prod</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-t mon">Production checks</div>
+      <ul class="b" style="font-size:.85rem">
+        <li>Input data distribution</li>
+        <li>Prediction distribution</li>
+        <li>Business KPIs</li>
+        <li>Infrastructure (latency, memory)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-t" style="color:var(--kw)">When to re-train</div>
+      <ul class="b" style="font-size:.85rem">
+        <li>Accuracy drops vs validation set</li>
+        <li>Significant drift detected</li>
+        <li>Business metric degrades</li>
+        <li>Scheduled cadence (e.g. weekly)</li>
+      </ul>
+    </div>
+  </div>
+</div><div class="timing">01:33</div>
+</div>
+
+<!-- 22: What Goes Wrong -->
+<div class="slide" data-s="mon">
+<div class="inner">
+  <div class="eyebrow mon">Root causes</div>
+  <div class="h1">Why models degrade in production</div>
+  <div class="two" style="margin-top:.9rem">
+    <div style="display:flex;flex-direction:column;gap:.7rem">
+      <div class="card" style="border-color:var(--kw)">
+        <div class="card-t" style="color:var(--kw)">Data drift</div>
+        <p style="font-size:.87rem;color:var(--dim);margin-top:.35rem;line-height:1.5">The <strong>input distribution changes</strong>. Trained on winter data; summer arrives. Features that were stable begin shifting. The model's assumptions are no longer valid.</p>
+      </div>
+      <div class="card" style="border-color:var(--num)">
+        <div class="card-t" style="color:var(--num)">Concept drift</div>
+        <p style="font-size:.87rem;color:var(--dim);margin-top:.35rem;line-height:1.5">The <strong>relationship between inputs and outputs changes</strong>. Fraud patterns evolve; customer behavior shifts. The model is now confidently wrong.</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.7rem">
+      <div class="card">
+        <div class="card-t mon">Model degradation</div>
+        <p style="font-size:.87rem;color:var(--dim);margin-top:.35rem;line-height:1.5">Performance gradually erodes due to accumulated drift. Often not a single event — it's a <strong>slow leak invisible without monitoring</strong>. The most dangerous failure mode.</p>
+      </div>
+      <div class="card">
+        <div class="card-t" style="color:var(--muted)">Pipeline / data issues</div>
+        <p style="font-size:.87rem;color:var(--dim);margin-top:.35rem;line-height:1.5">Missing features at serving time, upstream schema changes, ETL bugs. These cause silent mispredictions that <em>look like</em> drift but are actually engineering failures.</p>
+      </div>
+    </div>
+  </div>
+</div><div class="timing">01:40</div>
+</div>
+
+<!-- 23: Drift Taxonomy -->
+<div class="slide" data-s="mon">
+<div class="inner">
+  <div class="eyebrow mon">Drift taxonomy</div>
+  <div class="h1">Types of drift</div>
+  <div class="three" style="margin-top:1rem">
+    <div class="card" style="border-color:var(--cicd)">
+      <div class="card-t cicd">Covariate shift</div>
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);margin:.3rem 0 .5rem">P(X) changes · P(Y|X) stable</div>
+      <p style="font-size:.84rem;color:var(--dim);line-height:1.5">Input distribution shifts but the underlying pattern holds. Model still works, just less confidently.</p>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.6rem">Most common in practice</div>
+    </div>
+    <div class="card" style="border-color:var(--num)">
+      <div class="card-t" style="color:var(--num)">Prior probability shift</div>
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);margin:.3rem 0 .5rem">P(Y) changes · P(X|Y) stable</div>
+      <p style="font-size:.84rem;color:var(--dim);line-height:1.5">Label prevalence shifts — fraud rate spikes, but fraud features remain similar. Impacts calibration.</p>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.6rem">Common in imbalanced domains</div>
+    </div>
+    <div class="card" style="border-color:var(--kw)">
+      <div class="card-t" style="color:var(--kw)">Concept drift</div>
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);margin:.3rem 0 .5rem">P(Y|X) changes</div>
+      <p style="font-size:.84rem;color:var(--dim);line-height:1.5">The fundamental pattern changes — new fraud tactics, new user segments. Model is confidently wrong.</p>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.6rem">Hardest to detect</div>
+    </div>
+  </div>
+  <div class="three" style="margin-top:.9rem">
+    <div class="card">
+      <div class="card-t" style="color:var(--muted)">Sudden</div>
+      <p style="font-size:.82rem;color:var(--dim)">Abrupt change — new data source, product change. Sharp metric drop.</p>
+    </div>
+    <div class="card">
+      <div class="card-t" style="color:var(--muted)">Gradual</div>
+      <p style="font-size:.82rem;color:var(--dim)">Slow erosion over weeks/months. Easy to miss. Most damaging.</p>
+    </div>
+    <div class="card">
+      <div class="card-t" style="color:var(--muted)">Recurring</div>
+      <p style="font-size:.82rem;color:var(--dim)">Seasonal — needs periodic scheduled retraining, not just on degradation.</p>
+    </div>
+  </div>
+</div><div class="timing">01:47</div>
+</div>
+
+<!-- 24: Statistical Methods -->
+<div class="slide" data-s="mon">
+<div class="inner">
+  <div class="eyebrow mon">Detection</div>
+  <div class="h1">Statistical tests for drift</div>
+  <div style="display:flex;flex-direction:column;gap:.7rem;margin-top:1rem">
+    <div class="card" style="display:grid;grid-template-columns:9.5rem 1fr;gap:1.25rem;align-items:start">
+      <div><div style="font-family:var(--mono);font-weight:700;font-size:1rem">KS Test</div><div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.2rem">Kolmogorov-Smirnov</div></div>
+      <div><p style="font-size:.87rem;color:var(--dim);line-height:1.5"><strong>For continuous features.</strong> Compares CDFs of reference vs production distribution. Returns a p-value — drift detected if p &lt; 0.05. Non-parametric, no assumptions.</p>
+      <div class="pills" style="margin-top:.4rem"><span class="pill mon">numerical</span><span class="pill n">non-parametric</span></div></div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:9.5rem 1fr;gap:1.25rem;align-items:start">
+      <div><div style="font-family:var(--mono);font-weight:700;font-size:1rem">PSI</div><div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.2rem">Population Stability Index</div></div>
+      <div><p style="font-size:.87rem;color:var(--dim);line-height:1.5"><strong>For continuous features (binned).</strong> Measures magnitude of shift. <span style="color:var(--str)">PSI &lt; 0.1</span>: stable · <span style="color:var(--num)">0.1–0.2</span>: monitor · <span style="color:var(--kw)">&gt; 0.2</span>: significant drift, act now.</p>
+      <div class="pills" style="margin-top:.4rem"><span class="pill mon">numerical</span><span class="pill n">popular in finance/risk</span></div></div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:9.5rem 1fr;gap:1.25rem;align-items:start">
+      <div><div style="font-family:var(--mono);font-weight:700;font-size:1rem">Chi-squared</div><div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:.2rem">Pearson's χ²</div></div>
+      <div><p style="font-size:.87rem;color:var(--dim);line-height:1.5"><strong>For categorical features.</strong> Tests if observed category frequencies differ from expected. Ideal for monitoring label distribution shift and categorical feature drift.</p>
+      <div class="pills" style="margin-top:.4rem"><span class="pill mon">categorical</span><span class="pill n">label monitoring</span></div></div>
+    </div>
+  </div>
+</div><div class="timing">01:55</div>
+</div>
+
+<!-- 25: Evidently AI -->
+<div class="slide" data-s="mon">
+<div class="inner">
+  <div class="eyebrow mon">Tooling</div>
+  <div class="h1">Evidently AI</div>
+  <div class="two" style="margin-top:1rem">
+    <div style="display:flex;flex-direction:column;gap:.8rem">
+      <p class="body">Open-source ML monitoring library. Generates HTML reports and metric snapshots for data quality, data drift, and model performance.</p>
+      <div class="card">
+        <div class="card-t mon">Core concepts</div>
+        <ul class="b" style="font-size:.87rem;margin-top:.4rem">
+          <li><strong>Report</strong> — static HTML with visualizations for the team</li>
+          <li><strong>Test Suite</strong> — pass/fail checks with configurable thresholds</li>
+          <li><strong>Presets</strong> — curated bundles: DataDriftPreset, DataQualityPreset, RegressionPreset…</li>
+        </ul>
+      </div>
+      <div class="tk mon">Evidently applies the KS, PSI, and chi-squared tests internally and surfaces results as human-readable HTML reports — no manual stat test coding required.</div>
+    </div>
+    <pre class="code" style="font-size:.76rem"><span class="kw">from</span> evidently <span class="kw">import</span> Report
+<span class="kw">from</span> evidently.metric_preset <span class="kw">import</span> (
+    DataDriftPreset,
+    DataQualityPreset,
+)
+
+report = <span class="fn">Report</span>(metrics=[
+    <span class="fn">DataDriftPreset</span>(),
+    <span class="fn">DataQualityPreset</span>(),
+])
+
+report.run(
+    reference_data=reference_df,
+    current_data=production_df,
+)
+
+<span class="cm"># HTML report for the team</span>
+report.save_html(<span class="st">"monitoring.html"</span>)
+
+<span class="cm"># Programmatic access for alerts</span>
+result = report.as_dict()
+drifted = result[<span class="st">"metrics"</span>][<span class="nm">0</span>][
+    <span class="st">"result"</span>][<span class="st">"share_of_drifted_columns"</span>]</pre>
+  </div>
+</div><div class="timing">02:02</div>
+</div>
+
+<!-- 26: Alerting -->
+<div class="slide" data-s="mon">
+<div class="inner">
+  <div class="eyebrow mon">Response</div>
+  <div class="h1">Alerting &amp; remediation</div>
+  <div class="two" style="margin-top:.9rem;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:.45rem">
+      <div class="fbox mon" style="text-align:center">New production batch arrives</div>
+      <div style="text-align:center;color:var(--muted)">↓</div>
+      <div class="fbox" style="text-align:center">Run Evidently drift report</div>
+      <div style="text-align:center;color:var(--muted)">↓</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.4rem">
+        <div class="fbox fail" style="text-align:center;font-size:.73rem">PSI &gt; 0.2<br>or KS p &lt; 0.05</div>
+        <div style="color:var(--muted);font-size:.8rem;text-align:center">vs</div>
+        <div class="fbox pass" style="text-align:center;font-size:.73rem">within thresholds</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:.4rem">
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          <div class="fbox fail" style="font-size:.71rem;text-align:center">🔔 Alert<br>Slack / email / PagerDuty</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem">
+            <div class="fbox" style="font-size:.68rem;text-align:center">Re-train<br>on new data</div>
+            <div class="fbox" style="font-size:.68rem;text-align:center">Rollback<br>prev model</div>
+          </div>
+        </div>
+        <div></div>
+        <div class="fbox pass" style="font-size:.71rem;text-align:center">✓ Log metrics<br>next batch</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.8rem">
+      <div class="card">
+        <div class="card-t mon">Threshold guidance</div>
+        <ul style="list-style:none;font-size:.85rem;color:var(--dim);line-height:2">
+          <li><span style="font-family:var(--mono);color:var(--str)">PSI &lt; 0.1</span> &nbsp;→ stable, log only</li>
+          <li><span style="font-family:var(--mono);color:var(--num)">PSI 0.1–0.2</span> → warn, investigate</li>
+          <li><span style="font-family:var(--mono);color:var(--kw)">PSI &gt; 0.2</span> &nbsp;&nbsp;→ alert, re-train</li>
+          <li><span style="font-family:var(--mono);color:var(--kw)">KS p &lt; 0.05</span> → drift confirmed</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-t mon">Re-train vs rollback?</div>
+        <ul class="b" style="font-size:.86rem;margin-top:.4rem">
+          <li><strong>Re-train</strong> when the world has genuinely changed and new labelled data is available</li>
+          <li><strong>Rollback</strong> when a recent deployment caused the regression</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div><div class="timing">02:08</div>
+</div>
+
+<!-- 27: Monitoring Takeaways -->
+<div class="slide" data-s="mon">
+<div class="inner" style="max-width:700px">
+  <div class="eyebrow mon">Key takeaways</div>
+  <div class="h1">Production monitoring</div>
+  <div style="display:flex;flex-direction:column;gap:.65rem;margin-top:.9rem">
+    <div class="tk mon"><strong>Models decay silently.</strong> Without monitoring, degradation is invisible until a business metric collapses. Set up drift detection before you deploy, not after.</div>
+    <div class="tk mon"><strong>Know your drift type.</strong> Covariate shift (inputs change) vs concept drift (relationship changes) require different responses. Monitor both input distributions and prediction distributions.</div>
+    <div class="tk mon"><strong>Statistical tests are your first alarm.</strong> KS for continuous features, chi-squared for categorical, PSI as a business-friendly score. Set thresholds and automate the check per batch.</div>
+    <div class="tk mon"><strong>Evidently makes it concrete.</strong> HTML reports your team can read, test suites that integrate into pipelines, historical trend dashboards.</div>
+    <div class="tk mon"><strong>Pre-prod prevents prod fires.</strong> Shadow mode + canary deployment catches regressions before they impact live users and business KPIs.</div>
+  </div>
+</div><div class="timing">02:13</div>
+</div>
+
+<!-- 28: Wrap-up -->
+<div class="slide" data-s="end">
+<div class="inner" style="max-width:760px">
+  <div class="eyebrow" style="margin-bottom:.6rem">Session complete · Q&amp;A</div>
+  <div class="title" style="font-size:2.2rem;margin-bottom:1.4rem">What you now have</div>
+  <div class="three">
+    <div class="card" style="border-top:3px solid var(--wb)">
+      <div class="card-t wb" style="margin-bottom:.5rem">W&amp;B</div>
+      <ul style="list-style:none;font-size:.84rem;color:var(--dim);line-height:1.9">
+        <li>train_baseline.py</li>
+        <li>train_with_wandb.py</li>
+        <li>data_versioning_wandb.py</li>
+        <li>model_registry.py</li>
+        <li>dvc_demo/ pipeline</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--cicd)">
+      <div class="card-t cicd" style="margin-bottom:.5rem">CI/CD</div>
+      <ul style="list-style:none;font-size:.84rem;color:var(--dim);line-height:1.9">
+        <li>Dockerfile (multi-stage)</li>
+        <li>docker-compose.yml</li>
+        <li>Makefile</li>
+        <li>ml-pipeline.yml (4 jobs)</li>
+        <li>3 test files (pytest)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--mon)">
+      <div class="card-t mon" style="margin-bottom:.5rem">Monitoring</div>
+      <ul style="list-style:none;font-size:.84rem;color:var(--dim);line-height:1.9">
+        <li>Drift taxonomy</li>
+        <li>KS / PSI / χ² explained</li>
+        <li>Evidently AI patterns</li>
+        <li>Alerting playbook</li>
+        <li>Re-train vs rollback logic</li>
+      </ul>
+    </div>
+  </div>
+  <p class="body" style="margin-top:1.25rem;text-align:center">All code is in the <code style="font-family:var(--mono);color:var(--wb)">mlops/</code> repo. Clone it, run the scripts, break things.</p>
+</div><div class="timing">02:15</div>
+</div>
+
+</div><!-- /runner -->
+
+<nav id="nav">
+  <button id="bp" aria-label="Previous">←</button>
+  <div class="dots" id="dots"></div>
+  <span id="ctr">1 / 29</span>
+  <button id="bn" aria-label="Next">→</button>
+</nav>
+
+<script>
+const runner=document.getElementById('runner');
+const slides=[...runner.querySelectorAll('.slide')];
+const N=slides.length;
+const dotsEl=document.getElementById('dots');
+const ctr=document.getElementById('ctr');
+const bp=document.getElementById('bp');
+const bn=document.getElementById('bn');
+const sn1=document.getElementById('sn1');
+const sn2=document.getElementById('sn2');
+const sn3=document.getElementById('sn3');
+let cur=0;
+
+slides.forEach((s,i)=>{
+  const d=document.createElement('div');
+  d.className='dot';
+  d.dataset.s=s.dataset.s||'intro';
+  d.addEventListener('click',()=>go(i));
+  dotsEl.appendChild(d);
+});
+
+function go(n){
+  cur=Math.max(0,Math.min(N-1,n));
+  runner.style.transform=`translateX(-${cur*100}vw)`;
+  ui();
+}
+
+function ui(){
+  [...dotsEl.children].forEach((d,i)=>d.classList.toggle('on',i===cur));
+  ctr.textContent=`${cur+1} / ${N}`;
+  bp.style.opacity=cur===0?'.3':'1';
+  bn.style.opacity=cur===N-1?'.3':'1';
+  const s=slides[cur].dataset.s;
+  sn1.className='sp'+(s==='wb'?' awb':'');
+  sn2.className='sp'+(s==='cicd'?' acicd':'');
+  sn3.className='sp'+(s==='mon'?' amon':'');
+}
+
+bp.addEventListener('click',()=>go(cur-1));
+bn.addEventListener('click',()=>go(cur+1));
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(cur+1);}
+  if(e.key==='ArrowLeft'){e.preventDefault();go(cur-1);}
+  if(e.key==='Home')go(0);
+  if(e.key==='End')go(N-1);
+});
+ui();
+</script>
